@@ -1,0 +1,50 @@
+6
+```{r}
+rm(list=ls())
+library('readxl')
+data = read_xlsx('hw9_data.xlsx')
+data$Group <- as.factor(data$Group)
+```
+
+### (2)(3)
+```{r}
+#正态性检验
+library(rstatix)
+data %>%
+  group_by(Group) %>%
+  shapiro_test(Pre,Mid,Post)
+
+# 方差同质 + 球形检验 + 方差分析
+library(bruceR)
+res <- MANOVA(data, dvs = 'Pre:Post',dvs.pattern = '(.*)',
+              between = "Group",within = "Time",
+              sph.correction="GG")
+```
+
+(4)
+```{r}
+EMMEANS(res,effect = "Time", p.adjust = "Scheffe")
+``` 
+
+（5）
+```{r}
+#固定Time，比较Group
+EMMEANS(res,effect = "Group", by = "Time")  
+```
+
+```{r}
+#固定Group，比较Time
+EMMEANS(res,effect = "Time", by = "Group")  
+```
+
+（6）
+```{r}
+# 画图
+emmip(res,Time ~ Group, CIs = TRUE) 
+```
+
+（6）
+```{r}
+# 画图
+emmip(res,Time ~ Group, CIs = TRUE) 
+```

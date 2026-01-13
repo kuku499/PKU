@@ -1,0 +1,74 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+### two-way ANOVA
+
+data from the powerpoint 
+
+```{r}
+# two-way independent design
+# DV = performance
+# IV1 = time (1 = self-regulated, 0 = fixed)
+# IV2 = presentation mode (1 = paper, 0 = computer screen)
+
+
+setwd("/Users/kunlinwei/Documents/Documents-MBR/PKU/Courses/Stats.Course/2024Fall")
+rm(list = ls())
+library(readxl)
+library(bruceR)
+library(rstatix)
+library(stats)
+
+anova_data <- data.frame(read_excel("two way ANOVA.xlsx", sheet = 1))
+
+# check missing values
+sum(is.na(anova_data$performance))
+
+# check outliers
+identify_outliers(anova_data,performance)
+
+# check normality for each condition
+ # using with()
+with(anova_data,by(anova_data$performance,list(anova_data$time,anova_data$presentation),shapiro.test))
+# using by()
+by(anova_data$performance,interaction(anova_data$time,anova_data$presentation),shapiro.test)
+
+#the main test
+ANOVA_fit <- MANOVA(anova_data, subID = "id", dv = "performance",between = c("time", "presentation")) 
+
+EMMEANS(ANOVA_fit, effect = "time", by = "presentation") #simple main effect of time, by fixing presentation mode
+emmip(ANOVA_fit,"presentation"~"time") #x-axis = time, break by present
+
+EMMEANS(ANOVA_fit, effect = "presentation", by = "time") #simple main effect of presentation mode by fixing time
+emmip(ANOVA_fit,"time"~"presentation") #x-axis = present, break by time
+
+
+```
+
+```{r}
+#an alternative with interaction plot
+setwd("/Users/kunlinwei/Documents/Documents-MBR/PKU/Courses/Stats.Course/2024Fall")
+rm(list = ls())
+library(readxl)
+library(emmeans)
+
+anova_data <- data.frame(read_excel("two way ANOVA.xlsx", sheet = 1))
+perform <- anova_data$performance
+time <- as.factor(anova_data$time)
+present <- as.factor(anova_data$presentation)
+
+anova.lm = lm(perform~time*present,data = anova_data)
+summary.aov(anova.lm)
+
+emms1 <-emmeans(anova.lm, ~time|present) #simple main effect of time by different presentation mode
+summary(emms1)
+
+emms2 <-emmeans(anova.lm, ~present|time) #simple main effect of present mode by different time
+summary(emms2)
+
+emmip(anova.lm, time~present) #x-axis = present, break by time
+emmip(anova.lm, present~time) #x-axis = time, break by present 
+
+```

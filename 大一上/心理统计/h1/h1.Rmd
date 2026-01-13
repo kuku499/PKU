@@ -1,0 +1,19 @@
+计算平均数，中位数，标准差，方差
+```{r}
+library("readxl")
+data <- read_excel("hw1_data.xlsx",sheet=1)
+attach(data)
+sprintf("%.2f",mean(condition_a))
+sprintf("%.2f",median(condition_a))
+sprintf("%.2f",sd(condition_a))
+sprintf("%.2f",var(condition_a))
+sprintf("%.2f",mean(condition_b))
+sprintf("%.2f",median(condition_b))
+sprintf("%.2f",sd(condition_b))
+sprintf("%.2f",var(condition_b))
+```
+直方图
+```{r}
+hist(condition_a,col="blue",border = "black",xlab="height(cm)")
+hist(condition_b,col="red",border = "black",xlab="height(cm)")
+```

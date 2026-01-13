@@ -1,0 +1,63 @@
+```{r}
+rm(list=ls())
+library("readxl")
+library("dplyr")
+library("car")
+library("bruceR")
+library("emmeans")
+data<-read_excel("hw7_data.xlsx")
+attach(data)
+condition<-as.factor(condition)
+data %>%
+  group_by(condition) %>%
+    summarise(
+    统计量W = shapiro.test(rt)$statistic,
+    p值 = shapiro.test(rt)$p.valueins
+  )
+leveneTest(rt~condition)
+matrix_data <- matrix(data$rt, nrow = 20, ncol = 3 )
+mlmfit <- lm(matrix_data ~ 1)
+mauchly_result <- mauchly.test(mlmfit, X = ~1)
+print(mauchly_result)
+manova_result <- MANOVA(
+  data,
+  subID="id",
+  dv = "rt",
+  within = "condition",
+  sph.correction = "GG"
+  )
+summary(manova_result)
+tukey_result <- EMMEANS(
+  manova_result, 
+  effect = "condition", 
+  p.adjust = "tukey"
+)
+scheffe_result <- EMMEANS(
+  manova_result, 
+  effect = "condition",
+  p.adjust = "scheffe"
+)
+k <- 3
+n <- 20
+MSE <- 3636.79
+df_error <- 38
+alpha <- 0.05
+m0<-mean(rt[condition=="0"])
+m4<-mean(rt[condition=="4"])
+m8<-mean(rt[condition=="8"])
+Q<-qtukey(p=1-alpha,nmeans=k,df=df_error)
+HSD<-Q*sqrt(MSE/n)
+m04<-m0-m4
+m08<-m0-m8
+m48<-m4-m8
+print(HSD)
+print(m04)
+print(m08)
+print(m48)
+manova_result1<-MANOVA(
+  data,
+  dv = "rt",
+  between = "condition"
+)
+summary(manova_result1)
+```

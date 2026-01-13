@@ -1,0 +1,120 @@
+6、（60分）在一项关于学习行为与认知表现的研究中，研究者希望考察学习投入程度是否可以预测个体在认知任务中的表现差异。为此，研究者随机抽取了 24 名大学生，记录了他们在最近一周内的平均睡眠时长以及在一次标准化反应时任务中的表现。所有数据已整理并存储于 文件中，包含以下两个变量：
+SleepHours：最近一周内，个体每天的平均睡眠时长（单位：小时，连续变量）
+ReactionTime：在标准化反应时任务中的平均反应时（单位：毫秒，数值越大表示反应越慢）
+本研究假定样本为简单随机抽样，且各观测值之间相互独立。研究者希望通过相关分析与一元线性回归分析，系统地评估睡眠时长与反应时之间的线性关系及其统计意义。请在 R 中完成以下分析任务（显著性水平设为 0.05）。除特别说明外，数值结果保留三位小数。
+
+#（1）请绘制24名被试的睡眠时长（SleepHours）与反应时（ReactionTime）的散点图，并根据散点图初步判断两变量之间是否可能存在近似的线性关系。
+```{r}
+library(readxl)
+data <- read_excel("hw_11.xlsx")
+
+# (1) 散点图
+plot(data$SleepHours, data$ReactionTime,
+     xlab = "Sleep Hours (h)", ylab = "RT (ms)")
+```
+从散点图可以看出，随着睡眠时长的增加，反应时总体呈现下降趋势，即睡眠时间较长的被试反应速度更快。
+散点大致沿一条下降的直线分布，未观察到明显的非线性模式或异常点，说明两变量之间可能存在近似的线性负相关关系，适合进一步采用相关分析和一元线性回归分析。
+
+#（2）请使用Pearson相关分析计算睡眠时长与反应时之间的相关系数，并进行显著性检验。
+```{r}
+# (2) Pearson相关分析
+cor.test(data$SleepHours, data$ReactionTime)
+
+# Corr()无法直接得到t值
+library(bruceR)
+newdata <- data[,c('SleepHours','ReactionTime')] 
+Corr(newdata)
+```
+结果表明，两者之间存在显著的负相关关系，相关系数为r = −0.960，t(22) = −16.155，p < .001，95% 置信区间为 [−0.983, −0.909]。这表明睡眠时长越长，个体在反应时任务中的反应时间越短，二者之间具有较强的线性负相关关系。
+
+
+#（3）研究者进一步假设：睡眠时长可以作为自变量，对反应时进行线性预测。请基于该假设完成以下分析：拟合以 SleepHours 为自变量、ReactionTime 为因变量的一元线性回归模型；写出回归方程（形式为\ Y=bx+a，系数保留两位小数）；报告回归模型整体显著性检验的结果，包括：F 值、自由度、p 值、统计结论；并对线性回归模型的结果进行解读。
+```{r}
+# (3) 一元线性回归模型
+model <- lm(ReactionTime ~ SleepHours, data)
+summary(model)
+```
+以睡眠时长（SleepHours）为自变量、反应时（ReactionTime）为因变量，建立一元线性回归模型。结果显示，回归模型显著，
+F(1, 22) = 261.00，p < .001，模型的决定系数 R² = 0.922（调整后 R² = 0.919），说明约92.2% 的反应时变异可以由睡眠时长解释。
+回归方程为：Y =-40.79x+669.32
+结果解读：表明在平均意义上，睡眠时长每增加1 小时，反应时约减少40.79 毫秒
+
+#（4）请在同一张图中绘制原始散点图，并叠加第（3）问中拟合得到的回归直线。要求图形清晰，能够直观反映回归模型对数据的拟合趋势。
+```{r}
+# (4) 叠加回归直线的散点图
+plot(data$SleepHours, data$ReactionTime,
+     xlab = "Sleep Hours (h)", ylab = "RT (ms)",
+     abline(model))
+
+# 添加回归方程文本
+b <- round(coef(model)[2], 2)
+a <- round(coef(model)[1], 2)
+text(8, 440, paste("Ŷ =", b, "X +", a))
+```
+
+#（5）请基于第（3）问中建立的回归模型，输出样本中每一位被试对应的预测反应时，并说明这些预测值在回归分析中的含义。
+```{r}
+# (5) 基于回归模型计算预测值
+data$Predicted <- fitted(model)
+
+# 输出所有被试的预测反应时
+print(data[, c("ID", "SleepHours", "ReactionTime", "Predicted")], row.names = FALSE)
+
+model$fitted.values
+predict(model)
+```
+预测值表示根据在某已知给定睡眠时长，回归模型对被试反应时的期望估计值（条件均值），反映了模型所解释的系统性部分。实际观测值与预测值之间的差异对应于随机误差或个体差异。
+
+
+#（6）已知两名新被试的睡眠时长如下：被试A：SleepHours=6.5；被试B：SleepHours=8.0。请利用已建立的回归模型，预测这两名被试的反应时
+```{r}
+# (6) 新被试预测
+new_subjects <- data.frame(SleepHours = c(6.5, 8.0))
+predict(model, new_subjects)
+
+# 预测区间
+predict(model, new_subjects, interval = "prediction", level = 0.95)
+
+#直接代入
+```
+结果显示，当睡眠时长为6.5小时时，预测的反应时为404.203 ms，其95%预测区间为[378.574, 429.831]；当睡眠时长为8.0 小时时，预测的反应时为343.023 ms，其95%预测区间为[317.454, 368.592]
+预测区间反映了在相同睡眠条件下，新个体反应时可能出现的变动范围。
+
+
+
+```{r}
+data_t = data.frame(Before = c(50,55,60,65,70,75), After = c(55,58,63,68,72,78))
+
+t.test(data_t$Before, data_t$After, paired = TRUE)
+t.test((data_t$Before-data_t$After), mu = 0)
+```
+
+![](hw7.png)
+
+```{r}
+# 构造2*2列联表
+table <- data.frame(a = c(30, 10), b = c(20, 40))
+
+# phi coefficient
+library(psych)
+phi(table)
+```
+
+```{r}
+#恒定值不能算相关
+x <- rep(5, 10)  # x不变
+y <- rnorm(10)
+
+cor(x, y)
+```
+
+```{r}
+# 算临界值
+qt(1 - 0.05/2, df) #双侧t
+qt(1 - 0.05, df)  #单侧t
+qf(1 - 0.05, df1, df2)  #F
+
+# 给统计量算 p 值
+pt(t_value, df)
+pf(f_value, df1, df2)
+```

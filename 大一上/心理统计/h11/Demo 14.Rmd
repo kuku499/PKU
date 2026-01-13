@@ -1,0 +1,43 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+### linear regression
+
+```{r}
+library(ggpubr)
+library(rstatix)
+library("readxl")
+
+rm(list = ls()) # clear all the variables in global environment
+
+# do the linear regression  with the data in PPT
+X=c(5,1,4,7,6,4,3,2)
+Y=c(10,4,5,11,15,6,5,0)
+reg_data = data.frame(X,Y)
+summary(lm(Y~X,data=reg_data))
+
+
+# detailed example:
+# salary as a function of beginning salary
+setwd("D:/StatsI/22-23 PPT")
+reg_data = read_excel("data10-02.xlsx", sheet = 1)
+x=reg_data$salbegin
+y=reg_data$salary
+
+#plot the data first
+plot(x,y,col = "blue",main = "sal vs sal_begin regression",
+abline(lm(y~x)),cex = 1.3,pch = 16,xlab = "begining salary",ylab = "salary")
+
+# do the actual regression
+lm_results = lm(salary~salbegin,data=reg_data)
+summary.lm(lm_results)   # almost all the regression results
+
+#check the prediction vs the actual data
+plot(y,lm_results$fitted.values,xlab='salary',ylab='predicted salary')
+
+# check the residues
+hist(lm_results$residuals)
+plot(y,lm_results$residuals,xlab='salary',ylab='residues')
+plot(y,scale(lm_results$residuals),xlab='salary',ylab='z_scored residues')
+```

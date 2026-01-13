@@ -1,0 +1,104 @@
+
+# 相关(Correlation)
+
+这一节内容相对简单，主要围绕几种相关类型展开，大家需要理解不同相关的适用条件以及检验方法，以及如何在r语言中进行相关判断并检验显著性。
+
+## 不同相关类型
+
+### 皮尔逊相关(pearson correlation)
+
+1.  意义：反映了两个变量之间的**线性相关**的**方向**和**程度**
+2.  计算方法：$r = \frac{COV(x,y)}{\sqrt{Var(x)*Var(y)}}=\frac{SP}{\sqrt{SS_x*SS_y}}$
+3.  适用条件：两个变量都是**连续型变量(等距或等比变量)**，并且从一个正态分布的总体中随机取出
+4.  r语言实现：cor函数
+
+```{r pearson correlation}
+x <- c(156,168,178,192)
+y <- c(60,63,75,88)
+cor(x,y,method = 'pearson') # pearson相关系数
+```
+
+5.  注意点：请注意，$pearson\ r \approx 0$不代表x和y之间没有变化规律，只是可能并不呈现出线性相关
+
+```{r 非线性相关的例子}
+x <- 0:0.5:4
+y <- (x-2)^2
+
+plot(x,y)
+cor.test(x,y)
+# 当然用cor也可以，但是基本还是需要输出p值
+```
+
+### 斯皮尔曼相关(spearman correlation)
+
+1.  意义：这是一种非参的方法(会在下学期介绍非参检验)，反应了一个变量随着另一个变量变化的方向是否一致(consistency of direction of the relationship)
+2.  计算方法(无需掌握)：$r = 1-\frac{\sum{D^2}}{n(n^2-1)}$
+3.  适用条件：
+(i) 两个顺序变量之间的相关关系(比方说一个班内同学数学成绩排名和物理成绩排名的关系)
+(ii)  对于两个连续变量，**spearman correlation同样适用！**不过其衡量相关的方法是，先将两个连续变量排序，随后进行spearman相关的计算，在r中直接传入原始数据值即可
+
+4.  r语言实现：cor函数，需指定method
+
+```{r spearman correlation}
+x <- c(156,168,178,192)
+y <- c(60,63,75,88)
+cor.test(x,y,method = 'spearman') # 相关系数
+```
+
+5.  对于spearman相关和pearson相关
+
+-   对于spearman相关：即使是两组连续变量，如果一个随着另一个单调变化(包括导数值为0)，就可以认为二者变化关系一致，表现在r上，会发现$|r|= 1$
+-   对于pearson相关：除非两组变量在一条直线上(k != 0),其他情况下均会发现$|r| \ne 1$。
+
+```{r}
+x <- c(1,2,3,3,4,4,5,6)
+y <- x^2
+plot(x,y)
+cor.test(x,y,method = 'spearman')
+cor.test(x,y,method = 'pearson')
+```
+
+### 点二列相关(Point-Biserial correlation)
+
+1.  适用条件：一个变量是二分变量(dichotomous，如男性女性)，另外一个变量是连续型变量，探究两者之间的相关可以看做是点二列相关(Point-Biserial correlation)，当两个变量都是二分变量时，探究二者之间的相关关系可以看做是phi相关(phi coefficient)
+2.  计算方法(点二列相关)：
+
+-   将一个**二分变量编码为0和1**，如白天编码为0，黑天编码为1
+-   随后利用如下公式进行计算：$r = \frac{M_1 - M_0}{s_{n-1}}\sqrt{\frac{n_1n_0}{n(n-1)}}$
+
+```{r Point-biserial correlation}
+# x有两类
+set.seed(2023)
+x <-  c(rep('students',5),rep('teachers',5))
+# 生成10个均值为10，标准差为1的正态分布随机数
+y <-  rnorm(10,10,1)
+data <- data.frame(x,y)
+
+# 如果直接进行cor.test发现会报错
+# cor.test(x,y)
+
+# 因此我们需要进行编码,编码后直接比较就行了
+data$x[data$x == 'students'] = 0
+data$x[data$x == 'teachers'] = 1
+data$x = as.numeric(data$x)
+cor.test(data$x,data$y)
+
+# 如果用更简便的方法
+data$identity <- ifelse(data$x == 'students',0,1)
+z <- ifelse(x == 'students',0,1)
+
+cor.test(data$identity,data$y)
+cor.test(z,y)
+```
+
+## 相关显著性的检验
+
+1.  检验方法：采用t检验
+2.  计算方法：$t = \frac{t-\rho}{s_r},where\ s_r = \sqrt{\frac{1-r^2}{n-2}}$,注意这里t服从df = n-2的t分布
+3.  r语言实现：cor.test函数
+
+```{r 相关显著性检验}
+x = 1:1:20
+y = 2*x+rnorm(20,0,2)
+cor.test(x,y,method = 'pearson')
+```

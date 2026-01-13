@@ -1,0 +1,144 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+### two-way mixed ANOVA
+```{r}
+# the dataset used in the PPT: reading time measured across three months, subjects grouped by novel type
+# dependent variable：time1/time2/time3
+# between-group variable：group
+# within-group variable：time
+
+
+library(rstatix) # identify_outliers, get_summary_stats, anova_test, get_anova_table
+library(dplyr) # %>%
+library(bruceR)
+library(afex)
+library(readxl)
+
+setwd("E:/StatsI/22-23 PPT")
+rm(list = ls()) # clear all the variables in global environment
+mixed_data <- read_excel("mixed_anova_data_fiction.xlsx", sheet = 1)
+
+# check missing values
+sum(is.na(mixed_data$time1))
+sum(is.na(mixed_data$time2))
+sum(is.na(mixed_data$time3))
+sum(is.na(mixed_data$group))
+
+# check outliers
+mixed_data %>%
+  group_by(group) %>%
+  identify_outliers("time1")
+mixed_data %>%
+  group_by(group) %>%
+  identify_outliers("time2")
+mixed_data %>%
+  group_by(group) %>%
+  identify_outliers("time3")
+
+# check normality
+mixed_data %>%
+  group_by(group) %>%
+  shapiro_test(time1)
+mixed_data %>%
+  group_by(group) %>%
+  shapiro_test(time2)
+mixed_data %>%
+  group_by(group) %>%
+  shapiro_test(time3)
+
+# Computations
+mixed_fit <- MANOVA(mixed_data,
+                    dvs = "time1:time3",
+                    dvs.pattern = "time(.)",
+                    between = "group",
+                    within = "time", ###CAUTION###
+                    sph.correction = "GG")
+
+# Post hoc
+EMMEANS(mixed_fit, effect = "month", by = "group")
+EMMEANS(mixed_fit, effect = "group", by = "month")
+EMMEANS(mixed_fit, effect = "month")
+EMMEANS(mixed_fit, effect = "group")
+
+# Plotting
+emmip(mixed_fit,"group"~"month",CIs=TRUE,xlab="month",ylab="reading time",tlab="novel type") #x-axis = time, break by novel type
+emmip(mixed_fit,"month"~"group") #x-axis = novel type, break by time
+```
+
+
+```{r}
+# a memory performance example: measured across 5 days, subjects grouped by two memory techniques
+# dependent variable：day1/day2/day3/day4/day5
+# between-group variable：group
+# within-group variable：time
+
+library(rstatix) # identify_outliers, get_summary_stats, anova_test, get_anova_table
+library(dplyr) # %>%
+library(bruceR)
+library(afex)
+library(readxl)
+setwd("E:/StatsI/22-23 PPT")
+rm(list = ls()) # clear all the variables in global environment
+mixed_data <- read_excel("mixed_anova_data_memory.xlsx", sheet = 1)
+
+# check missing values
+sum(is.na(mixed_data$day1))
+sum(is.na(mixed_data$day2))
+sum(is.na(mixed_data$day3))
+sum(is.na(mixed_data$day4))
+sum(is.na(mixed_data$day5))
+sum(is.na(mixed_data$group))
+
+# check outliers
+mixed_data %>%
+  group_by(group) %>%
+  identify_outliers("day1")
+mixed_data %>%
+  group_by(group) %>%
+  identify_outliers("day2")
+mixed_data %>%
+  group_by(group) %>%
+  identify_outliers("day3")
+mixed_data %>%
+  group_by(group) %>%
+  identify_outliers("day4")
+mixed_data %>%
+  group_by(group) %>%
+  identify_outliers("day5")
+
+# check normality
+mixed_data %>%
+  group_by(group) %>%
+  shapiro_test(day1)
+mixed_data %>%
+  group_by(group) %>%
+  shapiro_test(day2)
+mixed_data %>%
+  group_by(group) %>%
+  shapiro_test(day3)
+mixed_data %>%
+  group_by(group) %>%
+  shapiro_test(day4)
+mixed_data %>%
+  group_by(group) %>%
+  shapiro_test(day5)
+
+# Computations
+mixed_fit <- MANOVA(mixed_data,
+                    dvs = "day1:day5",
+                    dvs.pattern = "day(.)",
+                    between = "group",
+                    within = "time", ###CAUTION###
+                    sph.correction = "GG")
+# post hoc
+EMMEANS(mixed_fit, effect = "time", by = "group")
+EMMEANS(mixed_fit, effect = "group", by = "time")
+EMMEANS(mixed_fit, effect = "time")
+EMMEANS(mixed_fit, effect = "group")
+emmip(mixed_fit,"group"~"time",CIs=TRUE) #x-axis = time, break by presentation
+emmip(mixed_fit,"time"~"group",CIs=TRUE) #x-axis = present, break by time
+
+```

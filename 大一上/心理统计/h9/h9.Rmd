@@ -1,0 +1,32 @@
+```{r}
+library(readxl)
+library(bruceR)
+library(rstatix)
+library(car)
+library(dplyr)
+data<-read_excel("hw9_data.xlsx")
+data%>%
+  group_by(Group)%>%
+  shapiro_test(Pre)
+data%>%
+  group_by(Group)%>%
+  shapiro_test(Mid)
+data%>%
+  group_by(Group)%>%
+  shapiro_test(Post)
+m<-MANOVA(data,
+          dvs=c("Pre","Mid","Post"),
+          dvs.pattern = "(.*)",
+          between = "Group",
+          within="time")
+m1<-MANOVA(data,
+          dvs=c("Pre","Mid","Post"),
+          dvs.pattern = "(.*)",
+          between = "Group",
+          within="time",
+          sph.correction = "GG")
+EMMEANS(m1,effect = "time",p.adjust = "scheffe")
+EMMEANS(m1,effect = "Group",by="time")
+EMMEANS(m1,effect = "time",by="Group")
+emmip(m1,time~Group,ylab="Accuracy")
+```

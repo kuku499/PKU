@@ -1,0 +1,283 @@
+## t检验概览基本步骤：
+
+- 确定虚无假设和备择假设(单向/双向)
+- 确定拒绝域
+- （检验前提条件）
+- 计算统计量
+- 比较统计量与拒绝域，报告结论
+
+```{r}
+#?t.test
+t.test(x, 
+       y = NULL, #单样本t检验不需要
+       alternative = c("two.sided", "less", "greater"), #指定检验的假设类型：双尾、左尾、右尾
+       mu = 0,  #虚无假设的均值（只有单样本t检验需要）
+       paired = FALSE, #是否为配对样本
+       var.equal = FALSE, #是否满足方差同质性
+       conf.level = 0.95,  #置信度
+       ...)  
+
+```
+
+```{r}
+#单样本t检验
+#example: 以下随机20名青少年的焦虑水平是否与历史平均水平（μ₀ = 25）存在显著差异？
+anxiety_scores <- c(26.98, 33.61, 28.43, 24.55, 28.51, 26.40, 27.68, 25.74, 
+                    25.15, 30.18, 34.46, 32.00, 29.19, 22.12, 27.77, 32.86, 
+                    23.60, 23.37, 31.65, 30.01)
+t.test(anxiety_scores, mu = 25) #双尾（默认）
+t.test(anxiety_scores, mu = 25, alternative = "greater") #单尾：是否显著高于25
+t.test(anxiety_scores, mu = 25, alternative = "less") #单尾：是否显著低于25
+
+#配对样本t检验
+#t.test(A, B, paired = TRUE)
+```
+
+
+### Q6. 独立样本t检验
+效果律（Law of Effects），即正强化会促进行为，而负强化会惩罚或削弱行为。一研究者想要知道，是否有结果反馈是否会对被试画线准确性产生影响，于是设计画线实验探究这一问题，让被试在不看自己所画线段的前提下，尽量画出与标准线段长度相同的线段。研究者将被试随机分为两组，一组为有反馈组（实验组），一组为无反馈组（对照组）。数据储存在hw6_data.xlsx中，其中id列为被试的编号，res列为被试的画线误差，即多次练习后，被试所画线段长度与标准线段长度之差的绝对值的平均值，type列为被试的组别（control为对照组，treat为对照组）。请回答下列问题：
+
+（1）请对数据的方差同质性进行检验，写出你的H0和H1、做出判断的标准（拒绝域或p值）、文字版的结论
+    H0：两组数据方差同质
+    H1：两组数据方差不同质
+
+```{r}
+#install.packages("car")
+#install.packages("carData")
+
+# ?leveneTest
+leveneTest(y, 
+           group, #对y分组的方式
+           center=median, #计算离差标准的方式，不太重要，可以直接默认
+           ...)   
+
+# p>0.05认为方差同质，p<0.05认为方差不同质
+#?var.test：严格要求正态
+```
+
+```{r}
+rm(list = ls())
+library(readxl)
+data <- read_excel("hw6_data.xlsx")
+attach(data)
+
+library(carData)
+library(car) 
+leveneTest(res, type)
+# Warning: type coerced to factor
+```
+
+```{r}
+type = as.factor(type)
+# 严格来说需要先转化为因子，但是这个方差同质检验的函数会自动识别
+# 还是建议先转化为因子（可能会影响其他的函数）
+
+leveneTest(res, type) # 修改之后不再报warning
+detach(data)
+```
+
+```{r}
+#如果没有attach？
+#leveneTest(res, type)
+leveneTest(data$res, data$type)
+```
+# 结论：F(1,33) = 13.033，p = .001，拒绝虚无假设，即认为两组数据方差不同质。
+# !!报告结果的格式：统计量（包括自由度），p = xx,（效应量）
+
+
+（2）请使用R语言自带的“t.test”函数对两组分数的差异进行检验，在指定var.equal参数为TRUE和FALSE的情况下，分别报告统计量和自由度，它们是否一致？为什么？
+```{r}
+# 如果分别传入X,Y向量
+t.test(data$res[data$type == 'control'] ,data$res[data$type == 'treat'], 
+                     alternative = "greater",
+                     var.equal = TRUE)
+
+t.test(data$res[data$type == 'control'] ,data$res[data$type == 'treat'], 
+                     alternative = "greater",
+                     var.equal = FALSE)
+
+# 直接传入数据框
+## S3 method for class 'formula'
+#t.test(formula, data, subset, na.action, ...)
+t.test(res ~ type, data = data, alternative = "greater", var.equal = TRUE)
+t.test(res ~ type, data = data, alternative = "greater", var.equal = FALSE)
+
+#greater(x>y)：使用 ~ 要看清楚r假设的是哪个更大（默认排序：首字母/数字大小）
+
+data$type <- factor(data$type, levels = c("treat", "control"))
+t.test(res ~ type, data = data,alternative = "greater", var.equal = FALSE)
+
+t.test(res ~ type, data = data, var.equal = TRUE)
+t.test(res ~ type, data = data, var.equal = FALSE)
+```
+# var.equal = TRUE时，df = 33，t = 3.57；var.equal = FALSE时，df = 16.58，t = 3.47
+# 不一致，因为使用welch方法进行了校正
+（本课程中，校正后的自由度可以直接写小数）
+
+
+
+### Q7. 单因素方差分析
+```{r}
+rm(list = ls())
+n = 10
+data2 <- read_excel("7.xlsx")
+```
+
+(1)把表格填写完整
+```{r}
+attach(data2)
+A = subset(score, group == "A")
+B = subset(score, group == "B")
+C = subset(score, group == "C")
+m1 <- mean(A)
+m2 <- mean(B)
+m3 <- mean(C)
+ss1 <- sum((A - m1)^2)
+ss2 <- sum((B - m2)^2)
+ss3 <- sum((C - m3)^2)
+G <- sum(A + B + C)
+X2 <- sum(A^2 + B^2 + C^2)
+
+T1 = 581	
+T2 = 652	
+T3 = 622
+#G = T1 + T2 + T3
+detach(data2)
+```
+
+(2)	请选择合适的统计方法，解答研究者的疑问。请使用上课PPT中讲过的one-way ANOVA 相关的公式列式计算，可以根据公式借助R代码计算（α=0.05，包括但不限于：陈述假设、确定自由度、计算F值、画出 ANOVA table、得出结论）
+
+  H0：三种教学方法对学生数学成绩没有影响
+  H1：三种教学方法对学生数学成绩有影响/三种教学方法中，至少有一种对学生数学成绩的影响不同于其他
+
+  以不同教学方法为自变量，以学生数学成绩为因变量，进行单因素方差分析（one-way ANOVA）
+  前提假设：
+  -在每个条件内进行的观察结果都是独立的
+  -在每个条件下的观测值的分布都是正态分布
+  -在每个条件下的观测值的分布应该满足方差齐性
+```{r}
+#install.packages("dplyr")
+#install.packages("rstatix")
+library(dplyr)  # %>%（管道操作符：传递整个表达式的结果，作为后续函数的第一个参数）
+library(rstatix)
+
+#正态性检验（Shapiro-Wilk test: p>0.05认为满足正态性假设）
+data2 %>% 
+  group_by(group) %>% 
+  shapiro_test(score)
+
+#scoreA <- data2$score[data2$group=='A']
+#shapiro_test(scoreA)
+
+#方差齐性（Levenes Test)
+leveneTest(score~group, data = data2) #p>0.05认为是方差齐性
+```
+
+手算anova table:
+$${SS}_{between} = \sum_{i=1}^k n_i(M_i-\overline{G})^2}=\sum\frac{T^2}{n}-\frac{G^2}{N}$$
+$$SS_{within} = \sum_{i=1}^k\sum_j(X_{i,j}-M_i)^2= \sum {SS}_{inside}$$
+$$SS_{total} = \sum_{i,j}(X_{i,j}-\overline{G})^2 = \sum{X^2}-\frac{G^2}{N} = SS_{between}+SS_{within}$$
+```{r}
+df_between = 2
+df_within = 27
+ss_between = (T1^2 + T2^2 + T3^2)/10 - G^2/30
+ss_within = ss1 + ss2 + ss3
+ms_between = ss_between / df_between
+ms_within = ss_within / df_within
+f = ms_between / ms_within
+ss_total = ss_between + ss_within
+df_total = df_between + df_within
+
+SS <- function(x){sum((x-mean(x))^2)} #定义一个计算和方的公式
+SS_total = SS(c(A,B,C))
+SS_within = SS(A)+SS(B)+SS(C)
+groupmean = c(rep(mean(A),n),rep(mean(B),n),rep(mean(C),n))
+SS_between = SS(groupmean)
+
+data.frame(SS = c(ss_between, ss_within, ss_total),
+           df = c(df_between, df_within, df_total),
+           MS = c(ms_between, ms_within,NA),
+           F = c(f,NA,NA),
+           p = c(1-pf(f,df_between,df_within),NA,NA),
+           row.names = c('between','within','total'))
+
+F_critical = qf(1 - 0.05, 2, 27)
+eta_squ = ss_between/ss_total
+```
+# F临(2,27) = 3.354。因为F_obs= 38.07 > F临(2,27) = 3.354, 所以拒绝H0, 3个教学方法对学生的数学成绩有显著影响, 即3种教学方法中至少有一种方法对学生数学成绩的影响不同于其他的。
+完整的结果报告：使用单因素方差分析，得到F(2,27)=38.07,p<.001,eta^2=0.74, 拒绝H0, 说明不同教学方法的均值不完全相同, 需要进行事后检验...
+
+
+#bruceR包直接实现
+  有关bruceR的参考网站：<https://psychbruce.github.io/bruceR/>
+  有关bruceR的中文网站：<https://zhuanlan.zhihu.com/p/281150493>
+```{r MANOVA}
+#install.packages("bruceR")
+
+#?MANOVA
+
+# Betweem-subjects design
+# MANOVA(data=, dv=, between=, ...)
+
+MANOVA(
+  data,
+  subID = NULL, #data是长数据(repeated ANOVA)必须定义:因为长数据里面一个被试占多行
+  dv = NULL, #定义单个因变量
+  dvs = NULL, #定义多个因变量。可以是变量范围，如dvs="A1B1:A2B3"
+  dvs.pattern = NULL, #如果使用了dvs参数，则必须定义变量名的命名规律，如dvs.pattern="A(.)B(.)"自动提取"A1B1"、"A1B2"…中的数字作为factor
+  between = NULL, #指定分组变量
+  within = NULL,
+  covariate = NULL,
+  ss.type = "III", #平方和的计算方法，默认是"III"型SS（一般的方差分析推荐使用）
+  sph.correction = "none", #repeated ANOVA, 违背球形假设后的校正方法
+  aov.include = FALSE,
+  digits = 3, #保留的小数位数，默认是2位小数
+  file = NULL
+)
+
+#?emmip
+emmip(object, 
+      formula, #核心公式：trace.factors ~ x.factors | by.factors：不同线条 ~ 横轴 | 每个factor一张图
+      type,  #估计的类型
+      CIs = FALSE, ...)
+```
+
+```{r}
+library(bruceR)
+result = MANOVA(data2, dv = "score", between = "group") 
+summary(result)
+#描述性统计；anova table计算；显著性水平；effect size；方差同质性检验
+
+#绘图
+emmip(result, ~ group,
+             CIs = TRUE,  # 显示置信区间
+             xlab = "group", ylab = "score")
+
+#EMMEANS(result, ~ group) #事后检验
+```
+
+
+
+(2)
+```{r 作图}
+library(ggplot2) #考试不要求
+
+stats <- data2 %>%
+  group_by(group) %>%
+  summarise(
+    Mean = mean(score),
+    SD = sd(score),
+    SE = SD / sqrt(n()),
+  )
+
+ggplot(stats, aes(x = group, y = Mean, fill = group)) +
+  geom_col(width = 0.5) +
+  geom_errorbar(aes(ymin = Mean - SE, ymax = Mean + SE), 
+                width = 0.1, linewidth = 0.6) +
+  labs(x = "group", y = "score") + 
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 70)) +
+  theme(axis.title = element_text(size = 15),
+        axis.text = element_text(size = 15),
+        axis.line = element_line(color = "black"))
+```
+

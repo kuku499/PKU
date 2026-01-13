@@ -1,0 +1,42 @@
+```{r}
+library("car")
+library("readxl")
+data<-read_excel("hw6_data.xlsx")
+levene_result <- leveneTest(res ~ type)
+print(levene_result)
+t.test(res~type,var.equal=TRUE)
+t.test(res~type,var.equal=FALSE)
+```
+
+```{r}
+rm(list=ls())
+library("readxl")
+data<-read_excel("7.xlsx")
+attach(data)
+a<-sum(A**2+B**2+C**2)
+sum(A)
+sum(B)
+sum(C)
+a<-mean(A)
+b<-mean(B)
+c<-mean(C)
+SS1<-var(A)*9
+SS2<-var(B)*9
+SS3<-var(C)*9
+score <- c(A, B, C)
+group <- factor(rep(c("A", "B", "C"), each=10))
+data <- data.frame(score, group)
+anova_result <- aov(score ~ group)
+summary(anova_result)
+x<-c(a,b,c)
+sds <- c(sd(A), sd(B), sd(C))
+ses<-sds/sqrt(10)
+bar<-barplot(x,width=0.1,ylim=c(0,70),names.arg=c("A","B","C"),col=c("lightblue","lightgreen","pink"),main="不同教学方法下成绩对比",xlab="教学方法",ylab="数学成绩")
+arrows(bar, x - ses,
+       bar, x + ses,
+       angle = 90,
+       code = 3,
+       length = 0.5,
+       lwd = 2,
+       col = "darkred")
+```

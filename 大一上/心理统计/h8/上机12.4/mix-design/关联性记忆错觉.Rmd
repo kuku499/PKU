@@ -1,0 +1,33 @@
+```{r}
+rm(list=ls())
+library(readxl)
+data = read_xlsx("data.xlsx",sheet = 1)
+```
+
+```{r}
+which(abs(scale(data$p1)) > 3)
+which(abs(scale(data$p2)) > 3)
+which(abs(scale(data$p3)) > 3)
+which(abs(scale(data$t1)) > 3) #101 701
+which(abs(scale(data$t2)) > 3) #1205
+which(abs(scale(data$t3)) > 3)
+```
+
+```{r}
+data2 = read_xlsx("data.xlsx",sheet = 2)
+library(bruceR)
+mix1 <- MANOVA(data2,
+                    dvs = c("p1","p2","p3"),
+                    dvs.pattern = "(.*)",
+                    between = "gender",
+                    within = "type")
+# 是否需要加上球形检验校正
+# 需要知道两个MSE不一样，组间的单独是一个，组内的和交互作用的是一个
+# 画图先简单看一下结果
+emmip(mix1,"gender"~"type",CIs=TRUE,xlab="type",ylab="p",tlab="gender")
+```
+
+
+```{r}
+EMMEANS(mix1, effect ="type")
+```
